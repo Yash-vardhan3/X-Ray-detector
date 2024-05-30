@@ -1,4 +1,4 @@
-# X-Ray-
+# Pneumonia Detection from Chest X-ray Images
 This project aims to develop a machine learning model to detect pneumonia from chest X-ray images. Pneumonia is a severe respiratory infection that can lead to complications if not diagnosed and treated promptly. Automated pneumonia detection systems can assist healthcare professionals in quickly identifying pneumonia cases, leading to faster treatment and improved patient outcomes.
 # Overview
 The project utilizes deep learning techniques, specifically convolutional neural networks (CNNs), to analyze chest X-ray images and classify them as either pneumonia-positive or pneumonia-negative. CNNs are well-suited for image classification tasks as they can automatically learn relevant features from raw pixel data, making them particularly effective for medical image analysis tasks.
