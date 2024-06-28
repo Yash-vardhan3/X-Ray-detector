@@ -9,6 +9,9 @@ from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
 from tkinter import filedialog
 from tkinter import Tk
+import lime
+from lime import lime_image
+import shap
 
 # Step 1: Data Preparation
 data_dir = r"C:\Users\HP\Downloads\archive\chest_xray\test"
@@ -64,31 +67,46 @@ print("Test Accuracy:", accuracy)
 model.save("medical_image_classifier.h5")
 
 # Step 6: Prediction
+def preprocess_image(image_path):
+    image = cv2.imread(image_path)
+    image = cv2.resize(image, (224, 224))  # Resize image to 224x224
+    image = image.astype('float32') / 255.0  # Normalize pixel values
+    image = np.expand_dims(image, axis=0)  # Add batch dimension
+    return image
+
 def predict_real_life_image(image_path):
     # Load the trained model
     model = load_model("medical_image_classifier.h5")
     
     # Preprocess the image
-    image = cv2.imread(image_path)
-    image = cv2.resize(image, (224, 224))  # Resize image to 224x224
-    image = image.astype('float32') / 255.0  # Normalize pixel values
-    image = np.expand_dims(image, axis=0)  # Add batch dimension
+    image = preprocess_image(image_path)
     
     # Make prediction
     predictions = model.predict(image)
     
     # Interpret prediction
     if predictions[0][0] > predictions[0][1]:
-        return "Normal"
+        return "Normal", predictions
     else:
-        return "Pneumonia"
+        return "Pneumonia", predictions
 
-# Function to browse for an image file
-def browse_image():
-    Tk().withdraw() # to prevent root window from appearing
-    image_path = filedialog.askopenfilename() # show an "Open" dialog box and return the path to the selected file
-    prediction = predict_real_life_image(image_path)
-    print("Prediction:", prediction)
+# LIME explainability
+def lime_explanation(image_path):
+    model = load_model("medical_image_classifier.h5")
+    image = preprocess_image(image_path)
+    
+    explainer = lime_image.LimeImageExplainer()
+    explanation = explainer.explain_instance(image[0], model.predict, top_labels=2, hide_color=0, num_samples=1000)
+    return explanation
+
+# SHAP explainability
+def shap_explanation(image_path):
+    model = load_model("medical_image_classifier.h5")
+    image = preprocess_image(image_path)
+    
+    explainer = shap.Explainer(model, X_train)
+    shap_values = explainer(image)
+    return shap_values
 
 # Step 7: Visualization
 # Plot training & validation accuracy values
@@ -109,5 +127,22 @@ plt.xlabel('Epoch')
 plt.legend(['Train', 'Test'], loc='upper left')
 plt.show()
 
-# Example usage
+# Example usage with Tkinter
+def browse_image():
+    Tk().withdraw() # to prevent root window from appearing
+    image_path = filedialog.askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    prediction, _ = predict_real_life_image(image_path)
+    print("Prediction:", prediction)
+
+    # Get LIME explanation
+    lime_exp = lime_explanation(image_path)
+    lime_image, mask = lime_exp.get_image_and_mask(lime_exp.top_labels[0], positive_only=True, hide_rest=False, num_features=10, min_weight=0.0)
+    plt.imshow(lime_image)
+    plt.title('LIME Explanation')
+    plt.show()
+
+    # Get SHAP explanation
+    shap_values = shap_explanation(image_path)
+    shap.image_plot(shap_values)
+
 browse_image()
